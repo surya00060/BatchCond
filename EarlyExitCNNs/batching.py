@@ -64,11 +64,9 @@ print('==> Finished loading model..')
 criterion = nn.CrossEntropyLoss()
 ## Predictor
 print('==> Building Predictor..')
-model_name = "predictor_32x32_resnet14[1,1,4]_cosineLR_steps300_epochs1500"
-epoch = 911
-predictor = ResNetEntropyPredictor32x32(BasicBlock, [1,1,4], sum(blocks))
+predictor = ResNetEntropyPredictor(BasicBlock, [1,1,4], sum(blocks))
 predictor.to(device)
-checkpoint=torch.load(f'./checkpoint/{model_name}_epoch_{epoch}_ckpt.pth')
+checkpoint=torch.load(f'./checkpoint/predictor_ckpt.pth')
 predictor.load_state_dict(checkpoint['net'])
 print('==> Finished loading predictor..')
 
