@@ -44,8 +44,8 @@ testset = torchvision.datasets.CIFAR10(
     root='./data', train=False, download=True, transform=transform_test)
 testloader = torch.utils.data.DataLoader(
     testset, batch_size=256, shuffle=False, num_workers=4)
-trainset_32x32 = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train_32x32)
-testset_32x32 = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_test_32x32)
+trainset_32x32 = torchvision.datasets.CIFAR10(root='./data', train=True, download=False, transform=transform_train_32x32)
+testset_32x32 = torchvision.datasets.CIFAR10(root='./data', train=False, download=False, transform=transform_test_32x32)
 ee_loader = torch.utils.data.DataLoader(
     testset, batch_size=1, shuffle=False, num_workers=4)
 classes = ('plane', 'car', 'bird', 'cat', 'deer',
@@ -176,8 +176,7 @@ def measure_time_with_predictor():
     print(f"Batch Time: {batch_time} Predictor Time: {pred_time}")
 
 
-
-def measure_time():
+def measure_time_with_batch_size_1_inference():
     net.eval()
     net.half()
     net.ee_entropy_threshold = 0.3
@@ -206,7 +205,14 @@ def measure_time():
     b1_inference = sum(batch_times)
     print(f"Batch Size: {1}  Batch Size 1 Inference Time: {b1_inference} ms")
 
-    ## Batched Inference with Compute Padding with Random Batching
+def measure_time():
+    net.eval()
+    net.half()
+    net.ee_entropy_threshold = 0.3
+    batch_size = 128
+    start_time = torch.cuda.Event(enable_timing=True)
+    end_time = torch.cuda.Event(enable_timing=True)
+    ## Batched Inference with Random Batching + Compute Padding
     batch_loader = torch.utils.data.DataLoader(testset, batch_size, shuffle=False, num_workers=4)
     for batch_idx, (inputs, targets) in enumerate(batch_loader):
         inputs, targets = inputs.to(device).half(), targets.to(device)
@@ -228,7 +234,14 @@ def measure_time():
     avg_exits = sum([exit.sum().item() for exit in exits]) / len(exits)
     print(f"Batch Size: {batch_size} Random Batching with Compute Padding Time: {b_inference} ms")
 
-    ## Batched Inference with SimBatch + HW_Aware ReOrg
+def measure_time_with_simbatch_abr(): 
+    net.eval()
+    net.half()
+    net.ee_entropy_threshold = 0.3
+    batch_size = 128
+    start_time = torch.cuda.Event(enable_timing=True)
+    end_time = torch.cuda.Event(enable_timing=True)
+    ## Batched Inference with SimBatch + ABR
     predictor.eval()
     predictor.half()
     ## SimBatch Runtime
@@ -270,16 +283,19 @@ def measure_time():
         torch.cuda.synchronize()
         batch_times.append(start_time.elapsed_time(end_time))
     batch_time = sum(batch_times)
-    print(f"Batch Size: {batch_size} SimBatch + HW_Aware ReOrg: {pred_time + batch_time} ms")
+    print(f"Batch Size: {batch_size} SimBatch + ABR: {pred_time + batch_time} ms")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = "BatchCond: Efficient Batched Inference in Conditional Neural Networks")
-    parser.add_argument("--eval_SimBatch", action = "store_true", help = "Compare our predictor with random batching.")
+    parser.add_argument("--measure_batch_size_1_inference", action = "store_true", help = "Perform batched inference.")
     parser.add_argument("--measure_batched_inference", action = "store_true", help = "Perform batched inference.")
-    args = parser.parse_args()
+    parser.add_argument("--measure_simbatch_abr", action = "store_true", help = "Perform batched inference.")
 
+    args = parser.parse_args()
+    if args.measure_batch_size_1_inference:
+        measure_time_with_batch_size_1_inference()
     if args.measure_batched_inference:
         measure_time()
-    if args.eval_SimBatch:
-        eval_predictor()
+    if args.measure_simbatch_abr:
+        measure_time_with_simbatch_abr()
     
