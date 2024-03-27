@@ -257,17 +257,9 @@ def measure_time_with_simbatch_abr():
         end_time.record()
         torch.cuda.synchronize()
         pred_times.append(start_time.elapsed_time(end_time))
-        for i in range(entropy_preds.shape[0]):
-            early_exit = False
-            for j in range(sum(blocks)):
-                if entropy_preds[i][j] < net.ee_entropy_threshold:
-                    early_exit = True
-                    exit_predictions[batch_idx*pred_batch_size+i] = j + 1
-                    break
-            if not early_exit:
-                exit_predictions[batch_idx*pred_batch_size+i] = sum(blocks) + 1
+        check_entropy_less_than_threshold = (entropy_preds < net.ee_entropy_threshold).int()
+        exit_predictions[batch_idx*pred_batch_size:batch_idx*pred_batch_size+pred_batch_size] = (torch.argmax(check_entropy_less_than_threshold, dim=1) + 1).to("cpu")
     pred_time = sum(pred_times)
-    # print(f"SimBatch Time: {pred_time} ms")
     batch_size = 128
     sorted_indices = np.argsort(exit_predictions)
     exit_predictions = exit_predictions[sorted_indices]
