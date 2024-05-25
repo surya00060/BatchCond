@@ -123,64 +123,11 @@ def eval_predictor():
     print(f"Predictor Batching Variance: {predictor_var}")
     return None
     
-
 @torch.inference_mode()
-def measure_time_with_predictor():
-    net.eval()
-    net.half()
-    predictor.eval()
-    predictor.half()
-    start_time = torch.cuda.Event(enable_timing=True)
-    end_time = torch.cuda.Event(enable_timing=True)
-    # Run Predictor
-    # pred_batch_size = 8192
-    pred_batch_size = 10000
-    exit_predictions = torch.zeros(len(testset))
-    pred_times = []
-    prediction_32x32_dataloader = torch.utils.data.DataLoader(testset_32x32, pred_batch_size, shuffle=False, num_workers=4)
-    for batch_idx, (inputs, targets) in enumerate(prediction_32x32_dataloader):
-        inputs, targets = inputs.to(device).half(), targets.to(device)
-        entropy_preds = predictor(inputs)
-        start_time.record()
-        predictor(inputs)
-        end_time.record()
-        torch.cuda.synchronize()
-        pred_times.append(start_time.elapsed_time(end_time))
-        for i in range(entropy_preds.shape[0]):
-            early_exit = False
-            for j in range(sum(blocks)):
-                if entropy_preds[i][j] < net.ee_entropy_threshold:
-                    early_exit = True
-                    exit_predictions[batch_idx*pred_batch_size+i] = j + 1
-                    break
-            if not early_exit:
-                exit_predictions[batch_idx*pred_batch_size+i] = sum(blocks) + 1
-    pred_time = sum(pred_times)
-    print(f"Predictor Time: {pred_time}")
-    batch_size = 128
-    sorted_indices = np.argsort(exit_predictions)
-    exit_predictions = exit_predictions[sorted_indices]
-    ordered_dataset = torch.utils.data.Subset(testset, sorted_indices)
-    batch_loader = torch.utils.data.DataLoader(ordered_dataset, batch_size, shuffle=False, num_workers=4)
-    batch_times = []
-    for batch_idx, (inputs, targets) in enumerate(batch_loader):
-        inputs, targets = inputs.to(device).half(), targets.to(device)
-        logits, exits = net.early_exit_hybrid_inference(inputs)
-        start_time.record()
-        logits, exits = net.early_exit_hybrid_inference(inputs)
-        end_time.record()
-        torch.cuda.synchronize()
-        batch_times.append(start_time.elapsed_time(end_time))
-    batch_time = sum(batch_times)
-    print(f"Batch Size: {batch_size} Total Inference Time with Predictor: {pred_time + batch_time}")
-    print(f"Batch Time: {batch_time} Predictor Time: {pred_time}")
-
-
 def measure_time_with_batch_size_1_inference():
     net.eval()
     net.half()
     net.ee_entropy_threshold = 0.3
-    batch_size = 128
     start_time = torch.cuda.Event(enable_timing=True)
     end_time = torch.cuda.Event(enable_timing=True)
     ## Batch Size 1 Inference with No Ineffectual Computations
