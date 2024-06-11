@@ -208,7 +208,6 @@ class ResNet(nn.Module):
         sample_exits = torch.zeros(x.shape[0], device=x.device, dtype=torch.int)
         already_exited = torch.zeros(x.shape[0], device=x.device, dtype=torch.bool)
         sample_index = torch.arange(x.shape[0], device=x.device, dtype=torch.int)
-        exited_but_not_dropped = torch.zeros(x.shape[0], device=x.device, dtype=torch.bool)
 
         early_exit = False
         for i in range(sum(self.num_blocks)):
@@ -218,7 +217,6 @@ class ResNet(nn.Module):
             exit_mask = ee_entropy < self.ee_entropy_threshold
 
             exit_this_layer = exit_mask & ~already_exited[sample_index]
-            exit_this_layer = exit_this_layer | exited_but_not_dropped[sample_index]
             num_samples = x.shape[0]
             cond1 = exit_this_layer.sum() > 0
             if not cond1:
@@ -231,13 +229,11 @@ class ResNet(nn.Module):
                 sample_logits[selected_indices] = ee_logits[exit_this_layer]
                 sample_exits[selected_indices] = i+1
                 already_exited[selected_indices] = True
-                exited_but_not_dropped[selected_indices] = False
                 sample_index = sample_index[~exit_this_layer]
             else:
                 sample_logits[selected_indices] = ee_logits[exit_this_layer]
                 sample_exits[selected_indices] = i+1
                 already_exited[selected_indices] = True
-                exited_but_not_dropped[selected_indices] = True
             
             if already_exited.all():
                 early_exit = True
