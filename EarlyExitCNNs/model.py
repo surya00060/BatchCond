@@ -133,7 +133,7 @@ class ResNet(nn.Module):
         return x, sum(self.num_blocks)+1
     
     @torch.inference_mode()
-    def early_exit_dummy_inference(self, x):
+    def early_exit_padding_inference(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -164,7 +164,7 @@ class ResNet(nn.Module):
         return sample_logits, sample_exits
     
     @torch.inference_mode()
-    def early_exit_dropping_inference(self, x):
+    def early_exit_splitting_inference(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
@@ -198,7 +198,7 @@ class ResNet(nn.Module):
         return sample_logits, sample_exits
     
     @torch.inference_mode()
-    def early_exit_hybrid_inference(self, x):
+    def early_exit_abr_inference(self, x):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
