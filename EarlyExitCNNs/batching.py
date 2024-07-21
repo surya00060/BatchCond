@@ -4,7 +4,6 @@ import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
 import argparse
-import random
 
 import numpy as np
 from model import *
