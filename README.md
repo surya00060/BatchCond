@@ -1,5 +1,5 @@
 # BatchCond Framework: Efficient Batched Inference in Conditional Neural Networks
-This repository contains code for the paper Efficient Batched Inference in Conditional Neural Networks, accepted to ESWeek CASES 2024.
+This repository contains code for the paper Efficient Batched Inference in Conditional Neural Networks, accepted to ESWEEK CASES 2024.
 
 ## Dependencies
 To install the necessary packages, use `pip install -r requirements.txt `
