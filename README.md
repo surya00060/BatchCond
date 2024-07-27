@@ -6,7 +6,7 @@ To install the necessary packages, use `pip install -r requirements.txt `
 
 This code was tested on RTX 2080 Ti GPU with CUDA Version 12.2
 
-## Commands for BatchCond
+## Commands
 `EarlyExitCNNs` folder contains all the code for perfoming batched inference in early exit neural networks. 
 
 To measure batch size 1 performance,
